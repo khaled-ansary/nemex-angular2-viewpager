@@ -1,7 +1,6 @@
 import { Component, ElementRef, Renderer, Inject } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { DOCUMENT } from '@angular/platform-browser';
-import { trigger, state, style, transition, animate, keyframes } from '@angular/animations';
 
 import { PointerPosition } from './pointer_position';
 import * as util from './utils';
@@ -12,7 +11,8 @@ import * as util from './utils';
     `<div class="viewpager"
         (mousedown)="onMouseDown($event)" (mouseup)="onMouseUp($event)" 
         (touchstart)="onMouseDown($event)" (touchend)="onMouseUp($event)"
-        (window:resize)="onWindowResize($event)">
+        (window:resize)="onWindowResize($event)"
+        (window:mouseout)="onWindowMouseLeave()">
     
         <div class="viewpager-content">
             <ng-content></ng-content>
@@ -32,21 +32,7 @@ import * as util from './utils';
           display: block;
           height: 100%;   
       }`
-    ],
-    animations: [
-        trigger('heroState', [
-          state('inactive', style({
-            backgroundColor: '#eee',
-            transform: 'scale(1)'
-          })),
-          state('active',   style({
-            backgroundColor: '#cfd8dc',
-            transform: 'scale(1.1)'
-          })),
-          transition('inactive => active', animate('100ms ease-in')),
-          transition('active => inactive', animate('100ms ease-out'))
-        ])
-      ]
+    ]
 })
 export class ViewPagerComponent {
     private mouseMoveBind: EventListener;
@@ -108,6 +94,12 @@ export class ViewPagerComponent {
         }
     }
 
+    // If the cursor left the window, act as mouse up
+    onWindowMouseLeave() {
+        if (this.mouseMoveBound)
+            this.onMouseUp(null);
+    }
+
     // Update all of the elements to fit the new size of the window
     onWindowResize(event: Event) {
         this.placeElements();
@@ -153,9 +145,9 @@ export class ViewPagerComponent {
     }
 
     // The number of pixels to move when animating
-    private animationPixelJump = 25;
+    private animationPixelJump = 50;
 
-    // The miniimum delta position to stop the scrolling from
+    // The minimum delta position to stop the scrolling from
     private minDeltaToPosition = 9;
 
     slideToElement(index) {
@@ -175,6 +167,6 @@ export class ViewPagerComponent {
                 viewPagerElement.scrollLeft += this.animationPixelJump;
             else
                 viewPagerElement.scrollLeft -= this.animationPixelJump;
-        }, 10);
+        }, 20);
     }
 }
