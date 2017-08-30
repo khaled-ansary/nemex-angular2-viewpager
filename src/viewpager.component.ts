@@ -9,10 +9,15 @@ import * as util from './utils';
 @Component({
     selector: 'nemex-viewpager',
     template:
-    `<div class="viewpager" (mousedown)="onMouseDown($event)" (mouseup)="onMouseUp($event)" (touchstart)="onMouseDown($event)" (touchend)="onMouseUp($event)">
+    `<div class="viewpager"
+        (mousedown)="onMouseDown($event)" (mouseup)="onMouseUp($event)" 
+        (touchstart)="onMouseDown($event)" (touchend)="onMouseUp($event)"
+        (window:resize)="onWindowResize($event)">
+    
         <div class="viewpager-content">
             <ng-content></ng-content>
         </div>
+
     </div>`,
     styles: [
         `.viewpager {
@@ -27,7 +32,21 @@ import * as util from './utils';
           display: block;
           height: 100%;   
       }`
-    ]
+    ],
+    animations: [
+        trigger('heroState', [
+          state('inactive', style({
+            backgroundColor: '#eee',
+            transform: 'scale(1)'
+          })),
+          state('active',   style({
+            backgroundColor: '#cfd8dc',
+            transform: 'scale(1.1)'
+          })),
+          transition('inactive => active', animate('100ms ease-in')),
+          transition('active => inactive', animate('100ms ease-out'))
+        ])
+      ]
 })
 export class ViewPagerComponent {
     private mouseMoveBind: EventListener;
@@ -53,8 +72,12 @@ export class ViewPagerComponent {
         return this.viewPagerContentElement.children;
     }
 
+    get canvasWidth() { 
+        return this.viewPagerElement.clientWidth;
+    }
+
     ngAfterViewInit() {
-        this.prepareElements();
+        this.placeElements();
     }
 
     onMouseDown(event: Event) {
@@ -85,6 +108,11 @@ export class ViewPagerComponent {
         }
     }
 
+    // Update all of the elements to fit the new size of the window
+    onWindowResize(event: Event) {
+        this.placeElements();
+    }
+
     onMouseUp(event: Event) {
         if (this.mouseMoveBound) {
             document.removeEventListener('touchmove', this.mouseMoveBind);
@@ -93,16 +121,17 @@ export class ViewPagerComponent {
             this.mouseMoveBound = false;
 
             // Complete the sliding animation the user attempted to slide to
+            var currentElementInView = this.getCurrentElementInView();
+            this.slideToElement(currentElementInView);
         }
     }
 
-    prepareElements() {
+    placeElements() {
         let index = 0;
-        let canvasWidth = this.viewPagerElement.clientWidth;
         for (let child of this.viewPagerItems)
-            this.prepareElementForViewpager(child, canvasWidth, index++);
+            this.prepareElementForViewpager(child, this.canvasWidth, index++);
 
-        this.viewPagerContentElement.style.width = (index * canvasWidth) + "px";
+        this.viewPagerContentElement.style.width = (index * this.canvasWidth) + "px";
     }
 
     prepareElementForViewpager(el, width, index) {
@@ -114,11 +143,38 @@ export class ViewPagerComponent {
         el.style.height = "100%";
     }
 
-    getCurrentElementInView() {
-        var childrenCount = this.viewPagerItems;
+    getCurrentElementInView():number {
+        var childrenCount = this.viewPagerItems.length;
+        var currentScrollLeft = this.viewPagerElement.scrollLeft;
+
+        // console.log("Children count: " + childrenCount + ", canvas size: " + this.canvasWidth + ", currentScrollLeft: " + currentScrollLeft);
+
+        return Math.round(currentScrollLeft / (this.canvasWidth * (childrenCount - 1))) * (childrenCount - 1);
     }
 
+    // The number of pixels to move when animating
+    private animationPixelJump = 25;
+
+    // The miniimum delta position to stop the scrolling from
+    private minDeltaToPosition = 9;
+
     slideToElement(index) {
-        var currentScrollLeft = this.viewPagerElement.scrollLeft;
+        var destination = (this.canvasWidth * index);
+        var viewPagerElement = this.viewPagerElement;
+
+        var timer = setInterval(() => {
+            var diff = destination - viewPagerElement.scrollLeft;
+
+            if (Math.abs(diff) < this.minDeltaToPosition) {
+                clearInterval(timer);
+                this.viewPagerElement.scrollLeft = destination;
+                return;
+            }
+
+            if (viewPagerElement.scrollLeft < destination)
+                viewPagerElement.scrollLeft += this.animationPixelJump;
+            else
+                viewPagerElement.scrollLeft -= this.animationPixelJump;
+        }, 10);
     }
 }

@@ -11,4 +11,8 @@ import { ViewPagerComponent } from './viewpager.component';
     providers: [],
     entryComponents: [ViewPagerComponent]
 })
-export class NemexViewPagerModule { }
+export class NemexViewPagerModule {
+    constructor() {
+
+    }
+ }
