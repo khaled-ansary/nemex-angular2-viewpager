@@ -49,6 +49,10 @@ export class ViewPagerComponent {
         return this.viewPagerElement.children[0];
     }
 
+    get viewPagerItems() {
+        return this.viewPagerContentElement.children;
+    }
+
     ngAfterViewInit() {
         this.prepareElements();
     }
@@ -83,17 +87,19 @@ export class ViewPagerComponent {
 
     onMouseUp(event: Event) {
         if (this.mouseMoveBound) {
-            this.previousPointerPosition = null;
             document.removeEventListener('touchmove', this.mouseMoveBind);
             document.removeEventListener('mousemove', this.mouseMoveBind);
+            this.previousPointerPosition = null;
             this.mouseMoveBound = false;
+
+            // Complete the sliding animation the user attempted to slide to
         }
     }
 
     prepareElements() {
         let index = 0;
         let canvasWidth = this.viewPagerElement.clientWidth;
-        for (let child of this.viewPagerContentElement.children)
+        for (let child of this.viewPagerItems)
             this.prepareElementForViewpager(child, canvasWidth, index++);
 
         this.viewPagerContentElement.style.width = (index * canvasWidth) + "px";
@@ -106,5 +112,13 @@ export class ViewPagerComponent {
         el.style.left = (width * index) + "px";
         el.style.width = width + "px";
         el.style.height = "100%";
+    }
+
+    getCurrentElementInView() {
+        var childrenCount = this.viewPagerItems;
+    }
+
+    slideToElement(index) {
+        var currentScrollLeft = this.viewPagerElement.scrollLeft;
     }
 }
