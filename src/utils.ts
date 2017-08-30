@@ -1,26 +1,24 @@
-export const isMouseInBounds = function(event:Event, el:HTMLElement, leaveRadius:number, document:Document) {
-    var pointerX = 0;
-    var pointerY = 0;
+import { PointerPosition } from './pointer_position';
 
-    if (event instanceof MouseEvent) {
-      pointerX = event.clientX;
-      pointerY = event.clientY;
-    }
-    else if (event instanceof TouchEvent) {
-      pointerX = event.touches[0].clientX;
-      pointerY = event.touches[0].clientY;
-    }
+export const isMouseInBounds = function (event: Event, el: HTMLElement, leaveRadius: number, document: Document) {
+  var pointerPosition = getPointerPosition(event);
+  var mouseX = document.body.scrollLeft + pointerPosition.x;
+  var mouseY = document.body.scrollTop + pointerPosition.y;
 
-    var mouseX = document.body.scrollLeft + pointerX;
-    var mouseY = document.body.scrollTop + pointerY;
-  
-    var elementX = el.offsetLeft;
-    var elementWidth = el.offsetWidth;
-    var elementY = el.offsetTop;
-    var elementHeight = el.offsetHeight;
-  
-    return mouseX >= (elementX - leaveRadius) &&
-          mouseX <= (elementX + elementWidth + leaveRadius) &&
-          mouseY >= (elementY - leaveRadius) &&
-          mouseY <= (elementY + elementHeight + leaveRadius);
-  };
+  var elementX = el.offsetLeft;
+  var elementWidth = el.offsetWidth;
+  var elementY = el.offsetTop;
+  var elementHeight = el.offsetHeight;
+
+  return mouseX >= (elementX - leaveRadius) &&
+    mouseX <= (elementX + elementWidth + leaveRadius) &&
+    mouseY >= (elementY - leaveRadius) &&
+    mouseY <= (elementY + elementHeight + leaveRadius);
+};
+
+export const getPointerPosition = function (event: Event): PointerPosition {
+  if (event instanceof MouseEvent)
+    return new PointerPosition(event.clientX, event.clientY);
+  else if (event instanceof TouchEvent)
+    return new PointerPosition(event.touches[0].clientX, event.touches[0].clientY);
+}

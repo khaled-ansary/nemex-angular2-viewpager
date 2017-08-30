@@ -2,6 +2,8 @@ import { Component, ElementRef, Renderer, Inject } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { DOCUMENT } from '@angular/platform-browser';
 import { trigger, state, style, transition, animate, keyframes } from '@angular/animations';
+
+import { PointerPosition } from './pointer_position';
 import * as util from './utils';
 
 @Component({
@@ -30,6 +32,7 @@ import * as util from './utils';
 export class ViewPagerComponent {
     private mouseMoveBind: EventListener;
     private mouseMoveBound = false;
+    private previousPointerPosition:PointerPosition;
 
     constructor(private el: ElementRef,
         private renderer: Renderer,
@@ -63,12 +66,24 @@ export class ViewPagerComponent {
 
     onWindowMouseMove(event: Event) {
         if (util.isMouseInBounds(event, this.viewPagerElement, 0, this.document)) {
-            console.log(event);
+            let pointerPosition = util.getPointerPosition(event);
+
+            if (this.previousPointerPosition == null)
+                this.previousPointerPosition = pointerPosition;
+            else {
+                let deltaPosition = pointerPosition.getDeltaPointerPosition(this.previousPointerPosition);
+
+                // Update the viewpager location according to the mouse delta position
+                this.viewPagerElement.scrollLeft += deltaPosition.x;
+            }
+
+            this.previousPointerPosition = pointerPosition;
         }
     }
 
     onMouseUp(event: Event) {
         if (this.mouseMoveBound) {
+            this.previousPointerPosition = null;
             document.removeEventListener('touchmove', this.mouseMoveBind);
             document.removeEventListener('mousemove', this.mouseMoveBind);
             this.mouseMoveBound = false;
