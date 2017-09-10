@@ -39,12 +39,15 @@ export class ViewPagerComponent {
     // Configurables
     private maxDeltaTimeForSlideLeave = 90; // The max time the mouse\touch should leave the screen for things to move using acceleration
     private minDeltaPixelsForSlideAcceleration = 4; // The minimum delta pixels should be between the last and first points in the stack for the acceleration to work
+    private minPixelsToStartMove = 5;
 
     private mouseMoveBind: EventListener;
     private mouseMoveBound = false;
     private previousPointerPosition: PointerPosition;
+    private firstPointerPosition: PointerPosition;
     private pointerStack: PointerStack = new PointerStack();
     private currentSlidingIndex = 0;
+    private isNowMoving = false;
     private slidingTimer = null;
 
     constructor(private el: ElementRef,
@@ -83,12 +86,31 @@ export class ViewPagerComponent {
             let pointerPosition = util.getPointerPosition(event);
 
             if (this.previousPointerPosition == null)
-                this.previousPointerPosition = pointerPosition;
+                this.firstPointerPosition = pointerPosition;
             else {
                 let deltaPosition = pointerPosition.getDeltaPointerPosition(this.previousPointerPosition);
 
+                if (!this.isNowMoving) {
+                    let deltaFirstPosition = this.firstPointerPosition.getDeltaPointerPosition(pointerPosition);
+
+                    // Check if the user moved enough pixels to determine it's direction
+                    if (Math.abs(deltaFirstPosition.x) >= this.minPixelsToStartMove ||
+                        Math.abs(deltaFirstPosition.y) >= this.minPixelsToStartMove) {
+                        
+                        // If the user is trying to move to it's x axis, allow the movement
+                        if (Math.abs(deltaFirstPosition.y) < Math.abs(deltaFirstPosition.x))
+                            this.isNowMoving = true;
+                        else {
+                            // If the user is trying to move to the y axis, stop everything and let him continue
+                            this.unbindAndClear();
+                            return;
+                        }
+                    }
+
+                }
+
                 // Update the viewpager location according to the mouse delta position
-                this.viewPagerElement.scrollLeft += deltaPosition.x;
+                if (this.isNowMoving) this.viewPagerElement.scrollLeft += deltaPosition.x;
             }
 
             this.previousPointerPosition = pointerPosition;
@@ -108,12 +130,7 @@ export class ViewPagerComponent {
     }
 
     onMouseUp(event: Event) {
-        if (this.mouseMoveBound) {
-            document.removeEventListener('touchmove', this.mouseMoveBind);
-            document.removeEventListener('mousemove', this.mouseMoveBind);
-            this.previousPointerPosition = null;
-            this.mouseMoveBound = false;
-
+        if (this.mouseMoveBound && this.isNowMoving) {
             // If the mouse up was called not from the mouse leave event
             if (event != null) {
                 let firstPosition = this.pointerStack.first;
@@ -134,12 +151,23 @@ export class ViewPagerComponent {
                 }
             }
 
-            this.pointerStack.clear();
+            this.unbindAndClear();
 
             // Complete the sliding animation the user attempted to slide to
             var currentElementInView = this.getCurrentElementInView();
             this.slideToElement(currentElementInView);
         }
+    }
+
+    // Unbinds any detection of mouse or touch movements and resets everything
+    unbindAndClear() {
+        this.pointerStack.clear();
+        document.removeEventListener('touchmove', this.mouseMoveBind);
+        document.removeEventListener('mousemove', this.mouseMoveBind);
+        this.previousPointerPosition = null;
+        this.firstPointerPosition = null;
+        this.mouseMoveBound = false;
+        this.isNowMoving = false;
     }
 
     placeElements() {
@@ -206,7 +234,7 @@ export class ViewPagerComponent {
                 viewPagerElement.scrollLeft += this.animationPixelJump;
             else
                 viewPagerElement.scrollLeft -= this.animationPixelJump;
-        }, 10);
+        }, 15);
 
         return true;
     }
