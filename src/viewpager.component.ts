@@ -120,7 +120,7 @@ export class ViewPagerComponent {
 
     // If the cursor left the window, act as mouse up
     onWindowMouseLeave() {
-        if (this.mouseMoveBound)
+        if (this.mouseMoveBound && this.isNowMoving)
             this.onMouseUp(null);
     }
 
