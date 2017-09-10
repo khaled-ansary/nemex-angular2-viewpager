@@ -1,4 +1,4 @@
-import { PointerPosition } from './pointer_position';
+import { PointerPosition } from './pointer-position';
 
 export const isMouseInBounds = function (event: Event, el: HTMLElement, leaveRadius: number, document: Document) {
   var pointerPosition = getPointerPosition(event);

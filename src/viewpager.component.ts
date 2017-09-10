@@ -2,7 +2,8 @@ import { Component, ElementRef, Renderer, Inject } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { DOCUMENT } from '@angular/platform-browser';
 
-import { PointerPosition } from './pointer_position';
+import { PointerPosition } from './pointer-position';
+import { PointerStack } from './pointer-stack';
 import * as util from './utils';
 
 @Component({
@@ -35,9 +36,15 @@ import * as util from './utils';
     ]
 })
 export class ViewPagerComponent {
+    // Configurables
+    private maxDeltaTimeForSlideLeave = 100; // The max time the mouse\touch should leave the screen for things to move using acceleration
+    private minDeltaPixelsForSlideAcceleration = 5; // The minimum delta pixels should be between the last and first points in the stack for the acceleration to work
+
     private mouseMoveBind: EventListener;
     private mouseMoveBound = false;
-    private previousPointerPosition:PointerPosition;
+    private previousPointerPosition: PointerPosition;
+    private pointerStack: PointerStack = new PointerStack();
+    private currentSlidingIndex = 0;
 
     constructor(private el: ElementRef,
         private renderer: Renderer,
@@ -46,25 +53,15 @@ export class ViewPagerComponent {
         this.mouseMoveBind = this.onWindowMouseMove.bind(this);
     }
 
-    get viewPagerElement() {
-        return this.el.nativeElement.children[0];
-    }
+    get viewPagerElement() { return this.el.nativeElement.children[0]; }
 
-    get viewPagerContentElement() {
-        return this.viewPagerElement.children[0];
-    }
+    get viewPagerContentElement() { return this.viewPagerElement.children[0]; }
 
-    get viewPagerItems() {
-        return this.viewPagerContentElement.children;
-    }
+    get viewPagerItems() { return this.viewPagerContentElement.children; }
 
-    get canvasWidth() { 
-        return this.viewPagerElement.clientWidth;
-    }
+    get canvasWidth() { return this.viewPagerElement.clientWidth; }
 
-    ngAfterViewInit() {
-        this.placeElements();
-    }
+    ngAfterViewInit() { this.placeElements(); }
 
     onMouseDown(event: Event) {
         event.preventDefault();
@@ -74,6 +71,7 @@ export class ViewPagerComponent {
             this.document.addEventListener('mousemove', this.mouseMoveBind);
 
             this.mouseMoveBound = true;
+            this.currentSlidingIndex = this.getCurrentElementInView();
         }
     }
 
@@ -91,6 +89,7 @@ export class ViewPagerComponent {
             }
 
             this.previousPointerPosition = pointerPosition;
+            this.pointerStack.push(pointerPosition);
         }
     }
 
@@ -111,6 +110,23 @@ export class ViewPagerComponent {
             document.removeEventListener('mousemove', this.mouseMoveBind);
             this.previousPointerPosition = null;
             this.mouseMoveBound = false;
+
+            // Add this position to the stack
+            let pointerPosition = util.getPointerPosition(event);
+            this.pointerStack.push(pointerPosition);
+
+            let firstPosition = this.pointerStack.first;
+            let lastPosition = this.pointerStack.last;
+            let deltaTime = firstPosition.date_created - lastPosition.date_created;
+            let slideDirection = this.pointerStack.getSlidePosition(this.minDeltaPixelsForSlideAcceleration);
+
+            this.pointerStack.clear();
+
+            // Check if the delta time is within the bounds to allow the slide accelration effect
+            if (deltaTime <= this.maxDeltaTimeForSlideLeave) {
+                let slideSucccided = this.slideToElement(this.currentSlidingIndex + (slideDirection == "left" ? -1 : 1));
+                if (slideSucccided) return;
+            }
 
             // Complete the sliding animation the user attempted to slide to
             var currentElementInView = this.getCurrentElementInView();
@@ -135,7 +151,7 @@ export class ViewPagerComponent {
         el.style.height = "100%";
     }
 
-    getCurrentElementInView():number {
+    getCurrentElementInView(): number {
         var childrenCount = this.viewPagerItems.length;
         var currentScrollLeft = this.viewPagerElement.scrollLeft;
 
@@ -150,10 +166,23 @@ export class ViewPagerComponent {
     // The minimum delta position to stop the scrolling from
     private minDeltaToPosition = 9;
 
-    slideToElement(index) {
+    get canSlideLeft(): boolean { return this.viewPagerItems.length > 1 && this.getCurrentElementInView() > 0; }
+    get canSlideRight(): boolean { return this.getCurrentElementInView() < this.viewPagerItems.length - 1; }
+
+    slideLeft():boolean { return this.slideToElement(this.getCurrentElementInView() - 1); }
+
+    slideRight():boolean { return this.slideToElement(this.getCurrentElementInView() + 1); }
+
+    slideToElement(index:number):boolean {
+        if (index < 0 || index >= this.viewPagerItems.length) {
+            console.warn("Invalid indexes were specified, can't scroll to index: " + index);
+            return false;
+        }
+
         var destination = (this.canvasWidth * index);
         var viewPagerElement = this.viewPagerElement;
 
+        // Create the sliding animations
         var timer = setInterval(() => {
             var diff = destination - viewPagerElement.scrollLeft;
 
@@ -168,5 +197,7 @@ export class ViewPagerComponent {
             else
                 viewPagerElement.scrollLeft -= this.animationPixelJump;
         }, 20);
+
+        return true;
     }
 }
