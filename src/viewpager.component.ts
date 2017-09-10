@@ -1,4 +1,4 @@
-import { Component, ElementRef, Renderer, Inject } from '@angular/core';
+import { Component, ElementRef, Renderer, Inject, Input } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { DOCUMENT } from '@angular/platform-browser';
 
@@ -37,9 +37,10 @@ import * as util from './utils';
 })
 export class ViewPagerComponent {
     // Configurables
-    private maxDeltaTimeForSlideLeave = 90; // The max time the mouse\touch should leave the screen for things to move using acceleration
-    private minDeltaPixelsForSlideAcceleration = 4; // The minimum delta pixels should be between the last and first points in the stack for the acceleration to work
-    private minPixelsToStartMove = 5;
+    @Input() preventDefaultTags: string[] = ["IMG"];
+    @Input() maxDeltaTimeForSlideLeave = 90; // The max time the mouse\touch should leave the screen for things to move using acceleration
+    @Input() minDeltaPixelsForSlideAcceleration = 4; // The minimum delta pixels should be between the last and first points in the stack for the acceleration to work
+    @Input() minPixelsToStartMove = 5;
 
     private mouseMoveBind: EventListener;
     private mouseMoveBound = false;
@@ -68,6 +69,18 @@ export class ViewPagerComponent {
     ngAfterViewInit() { this.placeElements(); }
 
     onMouseDown(event: Event) {
+        /* Check if we should use prevent default
+        if (event instanceof MouseEvent) {
+            for (let tag in this.preventDefaultTags) {
+                if (event.target instanceof HTMLElement && event.target.tagName == tag) {
+                    // This tag prevent default should be ignored
+                    event.preventDefault();
+                    break;
+                }
+            }
+        }
+        */
+
         if (!this.mouseMoveBound) {
             this.document.addEventListener('touchmove', this.mouseMoveBind);
             this.document.addEventListener('mousemove', this.mouseMoveBind);
@@ -96,7 +109,7 @@ export class ViewPagerComponent {
                     // Check if the user moved enough pixels to determine it's direction
                     if (Math.abs(deltaFirstPosition.x) >= this.minPixelsToStartMove ||
                         Math.abs(deltaFirstPosition.y) >= this.minPixelsToStartMove) {
-                        
+
                         // If the user is trying to move to it's x axis, allow the movement
                         if (Math.abs(deltaFirstPosition.y) < Math.abs(deltaFirstPosition.x))
                             this.isNowMoving = true;
