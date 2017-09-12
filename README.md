@@ -1,6 +1,6 @@
 # Nemex Angular 2 Viewpager
 
-This package implements a simple android\iPhone viewpager which allows swiping between
+This package implements a simple Android\iPhone viewpager which allows swiping between
 views easily using the mouse or touch "drag" motion.
 
 It implements this by creating an invisible horizontal scroll which contains
