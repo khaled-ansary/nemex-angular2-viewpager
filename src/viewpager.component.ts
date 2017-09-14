@@ -43,7 +43,7 @@ export class ViewPagerComponent {
     // Configurables
     @Input() preventDefaultTags: string[] = ["IMG"];
     @Input() maxDeltaTimeForSlideLeave = 110; // The max time the mouse\touch should leave the screen for things to move using acceleration
-    @Input() minDeltaPixelsForSlideAcceleration = 4; // The minimum delta pixels should be between the last and first points in the stack for the acceleration to work
+    @Input() minDeltaPixelsForSlideAcceleration = 3; // The minimum delta pixels should be between the last and first points in the stack for the acceleration to work
     @Input() minPixelsToStartMove = 5;
 
     private mouseMoveBind: EventListener;
@@ -85,8 +85,9 @@ export class ViewPagerComponent {
         }
         */
 
-        event.preventDefault();
-        
+        // Only prevent mouse events
+        if (event instanceof MouseEvent)
+            event.preventDefault();
 
         if (!this.mouseMoveBound) {
             this.document.addEventListener('touchmove', this.mouseMoveBind);
