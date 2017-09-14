@@ -26,19 +26,23 @@ import * as util from './utils';
           width: 100%;
           height: 800px;
           overflow: hidden;
+          padding: 0px;
       }
       
       .viewpager-content {
           position: relative;
           display: block;
           height: 100%;   
+          padding: 0px;
+          margin: 0px;
+          border: 0px;
       }`
     ]
 })
 export class ViewPagerComponent {
     // Configurables
     @Input() preventDefaultTags: string[] = ["IMG"];
-    @Input() maxDeltaTimeForSlideLeave = 90; // The max time the mouse\touch should leave the screen for things to move using acceleration
+    @Input() maxDeltaTimeForSlideLeave = 110; // The max time the mouse\touch should leave the screen for things to move using acceleration
     @Input() minDeltaPixelsForSlideAcceleration = 4; // The minimum delta pixels should be between the last and first points in the stack for the acceleration to work
     @Input() minPixelsToStartMove = 5;
 
@@ -81,6 +85,9 @@ export class ViewPagerComponent {
         }
         */
 
+        event.preventDefault();
+        
+
         if (!this.mouseMoveBound) {
             this.document.addEventListener('touchmove', this.mouseMoveBind);
             this.document.addEventListener('mousemove', this.mouseMoveBind);
@@ -91,6 +98,7 @@ export class ViewPagerComponent {
 
             this.mouseMoveBound = true;
             this.currentSlidingIndex = this.getCurrentElementInView();
+            // console.log("Current sliding index: " + this.currentSlidingIndex);
         }
     }
 
@@ -150,17 +158,31 @@ export class ViewPagerComponent {
                 let lastPosition = this.pointerStack.last;
                 let deltaTime = firstPosition.date_created - lastPosition.date_created;
                 let slideDirection = this.pointerStack.getSlidePosition(this.minDeltaPixelsForSlideAcceleration);
+                
+                /*
+                console.log("Tried sliding from acceleration, delta time: " + 
+                    deltaTime + " max delta time: " + this.maxDeltaTimeForSlideLeave + " slide direction: " + slideDirection);
+                */
 
                 // Check if the delta time is within the bounds to allow the slide accelration effect
                 if (slideDirection != null && deltaTime <= this.maxDeltaTimeForSlideLeave) {
+                    // console.log("Passed the first acceleration if");
                     let slideSucccided = false;
 
-                    if (slideDirection == "left" && this.canSlideLeft)
+                    if (slideDirection == "left" && this.canSlideLeft) {
+                        // console.log("Should slide left from acceleration");
                         slideSucccided = this.slideToElement(this.currentSlidingIndex - 1);
-                    else if (slideDirection == "right" && this.canSlideRight)
+                    }
+                    else if (slideDirection == "right" && this.canSlideRight) {
+                        // console.log("Should slide right from acceleration");
                         slideSucccided = this.slideToElement(this.currentSlidingIndex + 1);
+                    }
 
-                    if (slideSucccided) return;
+                    if (slideSucccided) {
+                        // console.log("Slided from acceleration");
+                        this.unbindAndClear();
+                        return;
+                    }
                 }
             }
 
@@ -168,6 +190,7 @@ export class ViewPagerComponent {
 
             // Complete the sliding animation the user attempted to slide to
             var currentElementInView = this.getCurrentElementInView();
+            // console.log("Sliding normally");
             this.slideToElement(currentElementInView);
         }
     }
@@ -198,15 +221,23 @@ export class ViewPagerComponent {
         el.style.left = (width * index) + "px";
         el.style.width = width + "px";
         el.style.height = "100%";
+        el.style.padding = "0px";
+        el.style.margin = "0px";
+        el.style.border = "0px";
     }
 
     getCurrentElementInView(): number {
         var childrenCount = this.viewPagerItems.length;
         var currentScrollLeft = this.viewPagerElement.scrollLeft;
 
-        // console.log("Children count: " + childrenCount + ", canvas size: " + this.canvasWidth + ", currentScrollLeft: " + currentScrollLeft);
+        var selectedIndex = Math.round(currentScrollLeft / (this.canvasWidth * childrenCount) * childrenCount);
 
-        return Math.round(currentScrollLeft / (this.canvasWidth * (childrenCount - 1))) * (childrenCount - 1);
+        /*
+        console.log("Children count: " + childrenCount + ", canvas size: " + this.canvasWidth + ", currentScrollLeft: " 
+                + currentScrollLeft + " index found: " + selectedIndex + ", current sliding index: " + this.currentSlidingIndex);
+        */
+
+        return selectedIndex;
     }
 
     // The number of pixels to move when animating
@@ -231,12 +262,17 @@ export class ViewPagerComponent {
 
         var destination = (this.canvasWidth * index);
         var viewPagerElement = this.viewPagerElement;
+        var scrollDirection = (viewPagerElement.scrollLeft < destination) ? "right" : "left";
 
         // Create the sliding animations
         this.slidingTimer = setInterval(() => {
             var diff = destination - viewPagerElement.scrollLeft;
+            var stopSliding = 
+                ((scrollDirection == "left" && viewPagerElement.scrollLeft - this.animationPixelJump < destination) ||
+                (scrollDirection == "right" && viewPagerElement.scrollLeft + this.animationPixelJump > destination) ||
+                Math.abs(diff) < this.minDeltaToPosition);
 
-            if (Math.abs(diff) < this.minDeltaToPosition) {
+            if (stopSliding) {
                 clearInterval(this.slidingTimer);
                 this.slidingTimer = null;
                 this.viewPagerElement.scrollLeft = destination;
