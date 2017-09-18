@@ -24,7 +24,6 @@ import * as util from './utils';
         `.viewpager {
           display: block;
           width: 100%;
-          height: 800px;
           overflow: hidden;
           padding: 0px;
       }
@@ -73,6 +72,7 @@ export class ViewPagerComponent {
     ngAfterViewInit() { this.placeElements(); }
 
     onMouseDown(event: Event) {
+        // -- FUTURE USE --
         /* Check if we should use prevent default
         if (event instanceof MouseEvent) {
             for (let tag in this.preventDefaultTags) {
@@ -86,8 +86,9 @@ export class ViewPagerComponent {
         */
 
         // Only prevent mouse events
-        if (event instanceof MouseEvent)
-            event.preventDefault();
+        // if (event instanceof MouseEvent)
+        //    event.preventDefault();
+        // -- FUTURE USE --
 
         if (!this.mouseMoveBound) {
             this.document.addEventListener('touchmove', this.mouseMoveBind);
@@ -213,6 +214,7 @@ export class ViewPagerComponent {
             this.prepareElementForViewpager(child, this.canvasWidth, index++);
 
         this.viewPagerContentElement.style.width = (index * this.canvasWidth) + "px";
+        this.viewPagerElement.style.height = this.viewPagerElement.scrollHeight + "px";
     }
 
     prepareElementForViewpager(el, width, index) {
