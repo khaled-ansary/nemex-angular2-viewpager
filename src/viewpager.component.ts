@@ -40,10 +40,13 @@ import * as util from './utils';
 })
 export class ViewPagerComponent {
     // Configurables
+
+    // The default tags to prevent the default event behavior for
     @Input() preventDefaultTags: string[] = ["IMG"];
     @Input() maxDeltaTimeForSlideLeave = 110; // The max time the mouse\touch should leave the screen for things to move using acceleration
     @Input() minDeltaPixelsForSlideAcceleration = 3; // The minimum delta pixels should be between the last and first points in the stack for the acceleration to work
-    @Input() minPixelsToStartMove = 5;
+    @Input() minPixelsToStartMove = 5; // The minimum pixels to start moving the view pager
+    @Input() preventDefaults = false;
 
     private mouseMoveBind: EventListener;
     private mouseMoveBound = false;
@@ -71,6 +74,8 @@ export class ViewPagerComponent {
 
     ngAfterViewInit() { this.placeElements(); }
 
+    /* Called when mouse\touch down is taking place. From here we are trying to bind mouse and touch move events in order to
+    track the mouse changes */
     onMouseDown(event: Event) {
         // -- FUTURE USE --
         /* Check if we should use prevent default
@@ -90,6 +95,8 @@ export class ViewPagerComponent {
         //    event.preventDefault();
         // -- FUTURE USE --
 
+        if (this.preventDefaults) event.preventDefault();
+
         if (!this.mouseMoveBound) {
             this.document.addEventListener('touchmove', this.mouseMoveBind);
             this.document.addEventListener('mousemove', this.mouseMoveBind);
@@ -104,6 +111,8 @@ export class ViewPagerComponent {
         }
     }
 
+    /* Called when mouse or touch move events are taking place. in this method we are detecting wheter the user wants to move the view-pager,
+    and if so - we check if the movement occurs via acceleration (such as fast finger swiping) or slowly. */
     onWindowMouseMove(event: Event) {
         if (util.isMouseInBounds(event, this.viewPagerElement, 0, this.document)) {
             let pointerPosition = util.getPointerPosition(event);
@@ -152,21 +161,23 @@ export class ViewPagerComponent {
         this.placeElements();
     }
 
+    /* Called when the mouse up or touch up are taking place. These allows us to detect if the user tried to swipe
+    using acceleration (fast finger swiping), swipe normally, or not move at all. */
     onMouseUp(event: Event) {
         if (this.mouseMoveBound && this.isNowMoving) {
             // If the mouse up was called not from the mouse leave event
             if (event != null) {
+                // Get the first and last positions the user started from
                 let firstPosition = this.pointerStack.first;
                 let lastPosition = this.pointerStack.last;
-                let deltaTime = firstPosition.date_created - lastPosition.date_created;
-                let slideDirection = this.pointerStack.getSlidePosition(this.minDeltaPixelsForSlideAcceleration);
-                
-                /*
-                console.log("Tried sliding from acceleration, delta time: " + 
-                    deltaTime + " max delta time: " + this.maxDeltaTimeForSlideLeave + " slide direction: " + slideDirection);
-                */
 
-                // Check if the delta time is within the bounds to allow the slide accelration effect
+                // The time taken from the first position to the last one
+                let deltaTime = firstPosition.date_created - lastPosition.date_created;
+
+                // Detect the slide direction
+                let slideDirection = this.pointerStack.getSlidePosition(this.minDeltaPixelsForSlideAcceleration);
+
+                // Check if the delta time is within the bounds to allow the slide acceleration effect
                 if (slideDirection != null && deltaTime <= this.maxDeltaTimeForSlideLeave) {
                     // console.log("Passed the first acceleration if");
                     let slideSucccided = false;
@@ -180,8 +191,8 @@ export class ViewPagerComponent {
                         slideSucccided = this.slideToElement(this.currentSlidingIndex + 1);
                     }
 
+                    // If the slide effect succided, stop any bindings and exit
                     if (slideSucccided) {
-                        // console.log("Slided from acceleration");
                         this.unbindAndClear();
                         return;
                     }
@@ -192,7 +203,6 @@ export class ViewPagerComponent {
 
             // Complete the sliding animation the user attempted to slide to
             var currentElementInView = this.getCurrentElementInView();
-            // console.log("Sliding normally");
             this.slideToElement(currentElementInView);
         }
     }
@@ -237,13 +247,7 @@ export class ViewPagerComponent {
         var selectedIndex = 0;
 
         if (!isRtl) selectedIndex = Math.round(currentScrollLeft / (this.canvasWidth * childrenCount) * childrenCount);
-        else selectedIndex = -(Math.round(Math.abs(currentScrollLeft / this.canvasWidth)) );
-
-        /*
-        console.log("Children count: " + childrenCount + ", canvas size: " + this.canvasWidth + ", currentScrollLeft: " 
-                + currentScrollLeft + " index found: " + selectedIndex + ", current sliding index: " + this.currentSlidingIndex);
-        */
-
+        else selectedIndex = -(Math.round(Math.abs(currentScrollLeft / this.canvasWidth)));
 
         return selectedIndex;
     }
@@ -261,6 +265,7 @@ export class ViewPagerComponent {
 
     slideRight(): boolean { return this.slideToElement(this.getCurrentElementInView() + 1); }
 
+    // Slides into a specific child
     slideToElement(index: number): boolean {
         if (this.slidingTimer) return;
 
