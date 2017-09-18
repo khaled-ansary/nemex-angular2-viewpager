@@ -232,13 +232,18 @@ export class ViewPagerComponent {
     getCurrentElementInView(): number {
         var childrenCount = this.viewPagerItems.length;
         var currentScrollLeft = this.viewPagerElement.scrollLeft;
+        var isRtl = currentScrollLeft < 0;
 
-        var selectedIndex = Math.round(currentScrollLeft / (this.canvasWidth * childrenCount) * childrenCount);
+        var selectedIndex = 0;
+
+        if (!isRtl) selectedIndex = Math.round(currentScrollLeft / (this.canvasWidth * childrenCount) * childrenCount);
+        else selectedIndex = -(Math.round(Math.abs(currentScrollLeft / this.canvasWidth)) );
 
         /*
         console.log("Children count: " + childrenCount + ", canvas size: " + this.canvasWidth + ", currentScrollLeft: " 
                 + currentScrollLeft + " index found: " + selectedIndex + ", current sliding index: " + this.currentSlidingIndex);
         */
+
 
         return selectedIndex;
     }
@@ -258,12 +263,9 @@ export class ViewPagerComponent {
 
     slideToElement(index: number): boolean {
         if (this.slidingTimer) return;
-        if (index < 0 || index >= this.viewPagerItems.length) {
-            console.warn("Invalid indexes were specified, can't scroll to index: " + index);
-            return false;
-        }
 
         var destination = (this.canvasWidth * index);
+
         var viewPagerElement = this.viewPagerElement;
         var scrollDirection = (viewPagerElement.scrollLeft < destination) ? "right" : "left";
 
