@@ -57,7 +57,7 @@ export class ViewPagerComponent {
 
     // The default tags to prevent the default event behavior for
     @Input() preventDefaultTags: string[] = ["IMG"];
-    @Input() maxDeltaTimeForSlideLeave = 110; // The max time the mouse\touch should leave the screen for things to move using acceleration
+    @Input() maxDeltaTimeForSlideLeave = 150; // The max time the mouse\touch should leave the screen for things to move using acceleration
     @Input() minDeltaPixelsForSlideAcceleration = 3; // The minimum delta pixels should be between the last and first points in the stack for the acceleration to work
     @Input() minPixelsToStartMove = 5; // The minimum pixels to start moving the view pager
     @Input() hideIndicator = false;
@@ -90,14 +90,14 @@ export class ViewPagerComponent {
 
     get canvasWidth() { return this.viewPagerElement.clientWidth; }
 
-    ngAfterViewInit() { 
+    ngAfterViewInit() {
         this.placeElements();
 
         // A fix for the index not updating after items have been updated
         setTimeout(() => {
             this.currentIndex = this.getCurrentElementInView();
         }, 50);
-     }
+    }
 
     /* Called when mouse\touch down is taking place. From here we are trying to bind mouse and touch move events in order to
     track the mouse changes */
@@ -234,9 +234,9 @@ export class ViewPagerComponent {
 
     // Unbinds any detection of mouse or touch movements and resets everything
     unbindAndClear() {
-        this.pointerStack.clear();
         document.removeEventListener('touchmove', this.mouseMoveBind);
         document.removeEventListener('mousemove', this.mouseMoveBind);
+        this.pointerStack.clear();
         this.previousPointerPosition = null;
         this.firstPointerPosition = null;
         this.mouseMoveBound = false;
@@ -297,6 +297,8 @@ export class ViewPagerComponent {
         var destination = (this.canvasWidth * index);
 
         var viewPagerElement = this.viewPagerElement;
+        if (viewPagerElement.scrollLeft == destination) return;
+
         var scrollDirection = (viewPagerElement.scrollLeft < destination) ? "right" : "left";
 
         // Create the sliding animations
