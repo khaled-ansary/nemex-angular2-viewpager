@@ -4,15 +4,22 @@ import { Component, ElementRef, Renderer, Inject, Input } from '@angular/core';
     selector: 'nemex-viewpager-indicator',
     template: 
     `<div class="viewpager-indicator">
-        <div class="page-dot" *ngFor="let page of pages">
+        <div  *ngFor="let page of pages; let i = index;" 
+            [ngClass]="[(i == (pageCount - 1) - currentIndex) ? 'page-dot page-dot-active' : 'page-dot']">
 
         </div>
     </div>`,
     styles: [`
+        .viewpager-indicator {
+            text-align: center;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
         .page-dot {
             width: 10px;
             height: 10px;
-            float: left;
+            display: inline-block;
             margin-right: 10px;
             border-radius: 10px;
             border: 1px solid #e60202;
@@ -24,11 +31,16 @@ import { Component, ElementRef, Renderer, Inject, Input } from '@angular/core';
     `]
 })
 export class ViewPagerIndicatorComponent {
-    @Input() currentIndex:number = 0;
-    @Input() pageCount:number = 0;
+    @Input() currentIndex:number;
+    @Input() pageCount:number;
 
 
     get pages() { 
-        return [1,2,3];
+        let arr = [];
+        for (let i = 0; i < this.pageCount; i++) {
+            arr.push(i);
+        }
+
+        return arr;
     }
 }
