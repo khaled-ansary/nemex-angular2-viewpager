@@ -72,6 +72,7 @@ export class ViewPagerComponent {
     private currentIndex = 0;
     private isNowMoving = false;
     private slidingTimer = null;
+    private isTouchcapable = false;
 
     constructor(private el: ElementRef,
         private renderer: Renderer,
@@ -119,12 +120,16 @@ export class ViewPagerComponent {
         // if (event instanceof MouseEvent)
         //    event.preventDefault();
         // -- FUTURE USE --
-
         if (this.preventDefaults) event.preventDefault();
 
         if (!this.mouseMoveBound) {
-            this.document.addEventListener('touchmove', this.mouseMoveBind);
-            this.document.addEventListener('mousemove', this.mouseMoveBind);
+            this.isTouchcapable = event instanceof TouchEvent;
+
+            // Remove duplicate bindings if touch event is detected to prevent bugs
+            if (this.isTouchcapable)
+                this.document.addEventListener('touchmove', this.mouseMoveBind);
+            else
+                this.document.addEventListener('mousemove', this.mouseMoveBind);
 
             // Add this position to the stack
             let pointerPosition = util.getPointerPosition(event);
@@ -307,7 +312,7 @@ export class ViewPagerComponent {
             var stopSliding =
                 ((scrollDirection == "left" && viewPagerElement.scrollLeft - this.animationPixelJump < destination) ||
                     (scrollDirection == "right" && viewPagerElement.scrollLeft + this.animationPixelJump > destination) ||
-                    Math.abs(diff) < this.minDeltaToPosition);
+                    Math.abs(diff) <= this.minDeltaToPosition);
 
             if (stopSliding) {
                 clearInterval(this.slidingTimer);
