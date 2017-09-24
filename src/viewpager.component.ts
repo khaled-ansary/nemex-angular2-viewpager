@@ -122,6 +122,12 @@ export class ViewPagerComponent {
         // -- FUTURE USE --
         if (this.preventDefaults) event.preventDefault();
 
+        // Clear the sliding timer if it's currently running
+        if (this.slidingTimer) { 
+            clearInterval(this.slidingTimer);
+            this.slidingTimer = null;
+        }
+
         if (!this.mouseMoveBound) {
             this.isTouchcapable = event instanceof TouchEvent;
 
