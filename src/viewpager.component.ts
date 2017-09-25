@@ -73,6 +73,9 @@ export class ViewPagerComponent {
     private isNowMoving = false;
     private slidingTimer = null;
     private isTouchcapable = false;
+
+
+    // On mobile devices such as iPhone the scroll is negative, this variable detects if device left scroll is flipped over
     private isRtl = false;
 
     constructor(private el: ElementRef,
@@ -105,6 +108,9 @@ export class ViewPagerComponent {
         // A hack for the problem with the index and detection of rtl on iPhone
         setTimeout(() => {
             this.currentIndex = this.getCurrentElementInView();
+
+            /* By default the device scrolls to the last item, on devices with RTL such iPhone
+            this returns 0, on normal devices it will return the a maximum scroll width */
             this.isRtl = this.viewPagerElement.scrollLeft == 0;
         }, 50);
     }
