@@ -22,7 +22,7 @@ import * as util from './utils';
         </div>
 
         <nemex-viewpager-indicator class="indicator" *ngIf="!hideIndicator"
-            [pageCount]="childrenCount" [currentIndex]="currentIndex">
+            [pageCount]="childrenCount" [currentIndex]="indicatorIndex">
         
         </nemex-viewpager-indicator>
     </div>`,
@@ -73,12 +73,20 @@ export class ViewPagerComponent {
     private isNowMoving = false;
     private slidingTimer = null;
     private isTouchcapable = false;
+    private isRtl = false;
 
     constructor(private el: ElementRef,
         private renderer: Renderer,
         private sanitizer: DomSanitizer,
         @Inject(DOCUMENT) private document: any) {
         this.mouseMoveBind = this.onWindowMouseMove.bind(this);
+    }
+
+    get indicatorIndex() { 
+        if (this.currentIndex < 0 || this.isRtl)
+            return this.childrenCount + this.currentIndex - 1;
+        
+        return this.currentIndex;
     }
 
     get viewPagerElement() { return this.el.nativeElement.querySelector(".viewpager"); }
@@ -94,9 +102,10 @@ export class ViewPagerComponent {
     ngAfterViewInit() {
         this.placeElements();
 
-        // A fix for the index not updating after items have been updated
+        // A hack for the problem with the index and detection of rtl on iPhone
         setTimeout(() => {
             this.currentIndex = this.getCurrentElementInView();
+            this.isRtl = this.viewPagerElement.scrollLeft == 0;
         }, 50);
     }
 

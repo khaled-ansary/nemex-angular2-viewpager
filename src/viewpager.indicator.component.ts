@@ -34,12 +34,10 @@ export class ViewPagerIndicatorComponent {
     @Input() currentIndex:number;
     @Input() pageCount:number;
 
-
     get pages() { 
         let arr = [];
-        for (let i = 0; i < this.pageCount; i++) {
+        for (let i = 0; i < this.pageCount; i++) 
             arr.push(i);
-        }
 
         return arr;
     }
