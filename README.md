@@ -14,14 +14,14 @@ Install the package using the following command:
 In your app module add the follwing code:
 ```typescript
 ...
-import { NemexViewpagerModule } from 'nemex-angular2-viewpager';
+import { NemexViewPagerModule } from 'nemex-angular2-viewpager';
 
 @NgModule({
   ...
   // Import the module in order to add the tooltip directive
   imports: [
     ...
-    NemexViewpagerModule
+    NemexViewPagerModule
   ],
   ...
 })
